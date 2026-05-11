@@ -1,0 +1,83 @@
+{
+  "motions": {
+
+    "move_plus": {
+      "sequence": [
+        {
+          "duration": 3.0,
+          "speed": 1
+        },
+        {
+          "duration": 3.0,
+          "speed": -1
+        }
+      ]
+    },
+
+    "move_minus": {
+      "sequence": [
+        {
+          "duration": 2.0,
+          "speed": -0
+        },
+        
+        {
+          "duration": 2.0,
+          "speed": 1
+        }
+      ]
+    },
+
+    "rotate_plus": {
+      "sequence": [
+        {
+          "duration": 3.0,
+          "speed": 30
+        }, 
+        {
+          "duration": 3.0,
+          "speed": -30
+        }
+      ]
+    },
+
+    "rotate_minus": {
+      "sequence": [
+        {
+          "duration": 6.0,
+          "speed": -30
+        },
+        {
+          "duration": 6.0,
+          "speed": 30
+        }
+      ]
+    }
+  },
+
+  "bindings": [
+
+    {
+      "target": "table",
+      "motion": "move_plus"
+    },
+    {
+      "target": "WPSarm.WPSarmsubWH.WPSarmsub.WPSarmsubsub",
+      "motion": "move_plus",
+      "time_offset": 1.0
+    },
+    {
+      "target": "WPSarm.WPSarmsubWH.WPSarmsub",
+      "motion": "move_minus"
+    },
+    {
+      "target": "WPSarm.WPSarmsubWH",
+      "motion": "move_plus"
+    },
+    {
+      "target": "WPSarm",
+      "motion": "rotate_minus",
+      "time_offset": 0.0
+    }
+  ]
+}
