@@ -139,6 +139,8 @@
         }
       ],
       "joint": {
+        "path": 2,
+        "axisno": 9,
         "type": "linear",
         "axis": [0,0,1]
       }

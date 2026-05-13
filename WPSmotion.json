@@ -62,16 +62,16 @@
       "motion": "move_plus"
     },
     {
-      "target": "WPSarm.WPSarmsubWH.WPSarmsub.WPSarmsubsub",
+      "target": "WPSarmsubsub",
       "motion": "move_plus",
       "time_offset": 1.0
     },
     {
-      "target": "WPSarm.WPSarmsubWH.WPSarmsub",
+      "target": "WPSarmsub",
       "motion": "move_minus"
     },
     {
-      "target": "WPSarm.WPSarmsubWH",
+      "target": "WPSarmsubWH",
       "motion": "move_plus"
     },
     {

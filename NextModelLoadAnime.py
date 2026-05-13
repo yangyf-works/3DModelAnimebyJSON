@@ -1,7 +1,5 @@
 import os
 import json
-import copy
-from platform import node
 import numpy as np
 import open3d as o3d
 
@@ -11,13 +9,13 @@ import open3d as o3d
 # ============================================================
 
 class Joint:
-
     def __init__(
         self,
         joint_type,
         axis,
         pivot=None,
-        name=None
+        path=None,
+        axisno=None
     ):
 
         self.type = joint_type
@@ -37,7 +35,8 @@ class Joint:
             dtype=float
         )
 
-        self.name = name
+        self.path = path
+        self.axisno = axisno
 
 
 # ============================================================
@@ -45,10 +44,8 @@ class Joint:
 # ============================================================
 
 class SceneNode:
-    def __init__(self, name, ref=None):
-
+    def __init__(self, name):
         self.name = name
-        self.ref = ref
 
         self.children = []
 
@@ -68,7 +65,6 @@ class SceneNode:
 # ============================================================
 
 class MotionClip:
-
     def __init__(self, name, sequence):
 
         self.name = name
@@ -118,7 +114,6 @@ class MotionClip:
         self.total_value = current_value
 
 class MotionBinding:
-
     def __init__(
         self,
         target,
@@ -138,7 +133,6 @@ class MotionBinding:
 # ============================================================
 
 def make_transform(transform_def):
-
     T = np.eye(4)
 
     if transform_def is None:
@@ -223,9 +217,9 @@ def parse_joint(joint_def):
             "pivot",
             [0, 0, 0]
         ),
-        name=joint_def.get("name")
+        path=joint_def.get("path"),
+        axisno=joint_def.get("axisno")
     )
-
 
 # ============================================================
 # joint transform
@@ -500,7 +494,6 @@ def build_node(
 
     node = SceneNode(current_path)
     node.local_T = make_transform(node_def.get("transform"))
-    node.def_T = make_transform(defn.get("transform"))
 
     # ========================================================
     # mesh
@@ -516,6 +509,8 @@ def build_node(
         )
         mesh.compute_vertex_normals()
         node.meshes.append(mesh)
+        
+        node.def_T = make_transform(defn.get("transform"))
 
     # ========================================================
     # node
@@ -629,7 +624,7 @@ def load_motion_file(path):
 
 def find_node(node, path):
 
-    if node.name == path:
+    if path in node.name:
         return node
 
     for child in node.children:
@@ -686,16 +681,10 @@ def evaluate_clip(
 def apply_motion_bindings(
     roots,
     bindings,
-    t,
-    dt
+    t
 ):
 
     for binding in bindings:
-
-        speed = evaluate_clip(
-            binding.clip,
-            t + binding.time_offset
-        )
 
         for root in roots:
 
@@ -743,7 +732,7 @@ def collect_meshes(
 # ============================================================
 if __name__ == "__main__":
     MODEL_JSON = "WPSmodel.json"
-    MOTION_JSON = "WPSmotion2.json"
+    MOTION_JSON = "WPSmotion.json"
 
     DT = 1 / 60
 
@@ -843,8 +832,7 @@ if __name__ == "__main__":
         apply_motion_bindings(
             roots,
             bindings,
-            t,
-            DT
+            t
         )
 
         # --------------------------------------------------------
