@@ -1,0 +1,130 @@
+{
+  "definitions": {
+    "cube": {
+      "type": "mesh",
+      "file": "cube.ply"
+    },
+    "sphere": {
+      "type": "mesh",
+      "file": "sphere.ply"
+    },
+    "cylinder": {
+      "type": "mesh",
+      "file": "cylinder.ply"
+    },
+    "Spindle": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "cylinder",
+          "transform": {
+            "scale": [1.0, 1.5, 1],
+            "rotation": [90, 0, 0]
+          }
+        }
+      ]
+    },
+    "SpindleY": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "Spindle"
+        }
+      ],
+      "joint": {
+        "type": "linear",
+        "axis": [1,0,0]
+      }
+    },
+    
+    "SpindleYZ": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "SpindleY"
+        }
+      ],
+      "joint": {
+        "type": "linear",
+        "axis": [0,1,0]
+      }
+    },
+
+    "tableB": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "cylinder",
+          "transform": {
+            "scale": [2, 0.5, 2],
+            "position": [0, 0, 0]
+          }
+        },
+        {
+          "ref": "cube",
+          "transform": {
+            "scale": [1, 0.5, 1],
+            "position": [0, 0.5, 0]
+          }
+        }
+      ],
+      "joint": {
+        "type": "rotate",
+        "pivot":[0, 0, 0],
+        "axis": [0, 1, 0]
+      }
+    },
+    "tableBC": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "tableB",
+          "transform": {
+            "position": [0, 0, 0]
+          }
+        },
+        {
+          "ref": "cylinder",
+          "transform": {
+            "position": [0, -1.0, 0],
+            "scale": [2.0, 3, 2],
+            "rotation": [90, 0, 0]
+          }
+        }
+      ],
+      "joint": {
+        "type": "rotate",
+        "pivot":[0, -1.0, 0],
+        "axis": [0, 0, 1]
+      }      
+    },
+    "tableBCX": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "tableBC"
+        }
+      ],
+      "joint": {
+        "type": "linear",
+        "axis": [0,0,1]
+      }
+    }
+  },
+
+  "scene": [
+    {
+      "ref": "SpindleYZ",
+      "transform": {
+        "position": [0, 3, -3]
+      }
+    },
+    {
+      "ref": "tableBCX",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0]
+      }
+    }
+  ]
+}

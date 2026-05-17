@@ -145,6 +145,18 @@
         "axis": [0,0,1]
       }
     },
+    "WPSarmhand": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "WorkCube"
+        }
+      ],
+      "joint": {
+        "type": "signal",
+        "signal": "X4.4"
+      }
+    },
     "WPSarmsubsub": {
       "type": "node",
       "children": [
@@ -152,6 +164,12 @@
           "ref": "cube",
           "transform": {
             "scale": [3, 0.3, 0.3]
+          }
+        },
+        {
+          "ref": "WPSarmhand",
+          "transform": {
+            "position": [-2.0, 0, 0]
           }
         }
       ],

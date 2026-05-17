@@ -1,7 +1,15 @@
 {
   "motions": {
+    "handclamp": {
+      "type": "signal",
+      "sequence": [
+        { "duration": 1.0, "value": 0 },
+        { "duration": 1.0, "value": 1 }
+      ]
+    },
 
     "move_plus": {
+      "type": "motion",
       "sequence": [
         {
           "duration": 3.0,
@@ -73,6 +81,10 @@
   },
 
   "bindings": [
+    {
+      "target": "WPSarmhand",
+      "motion": "handclamp"
+    },
 
     {
       "target": "table",
