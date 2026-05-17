@@ -2,7 +2,8 @@ import os
 import json
 import numpy as np
 import open3d as o3d
-
+import colorsys
+initial_camera = None
 
 # ============================================================
 # Joint
@@ -709,12 +710,40 @@ def apply_motion_bindings(
 # collect meshes
 # ============================================================
 
+COLOR_LIST = [
+    [0.7, 0.7, 0.7],  # light gray
+              ]
+
+for i in range(10):
+
+    h = i / 10      # 色相
+    s = 0.4        # 彩度低め
+    v = 0.9        # 明るめ
+
+    rgb = colorsys.hsv_to_rgb(h, s, v)
+
+    COLOR_LIST.append(rgb)
+
 def collect_meshes(
     node,
-    out_list
+    out_list,
+    color_index=0
 ):
 
+    # --------------------------------------------------------
+    # JointがあるNodeを通過したら次の色へ
+    # --------------------------------------------------------
+
+    if node.joint is not None:
+        color_index += 1
+
+    color = COLOR_LIST[
+        color_index % len(COLOR_LIST)
+    ]
+
     for mesh in node.meshes:
+
+        mesh.paint_uniform_color(color)
 
         out_list.append(
             (mesh, node.world_T @ node.def_T)
@@ -724,8 +753,79 @@ def collect_meshes(
 
         collect_meshes(
             child,
-            out_list
+            out_list,
+            color_index
         )
+
+# ============================================================
+# export merged STL
+# ============================================================
+
+def export_scene_as_stl(
+    roots,
+    output_path="export.stl"
+):
+
+    merged = o3d.geometry.TriangleMesh()
+
+    all_meshes = []
+
+    for root in roots:
+        collect_meshes(
+            root,
+            all_meshes
+        )
+
+    for mesh, world_T in all_meshes:
+
+        # ----------------------------------------
+        # 元メッシュを壊さないようコピー
+        # ----------------------------------------
+
+        m = o3d.geometry.TriangleMesh(mesh)
+
+        # ----------------------------------------
+        # merge
+        # ----------------------------------------
+
+        merged += m
+
+    # --------------------------------------------
+    # 法線再計算
+    # --------------------------------------------
+
+    merged.compute_vertex_normals()
+
+    # --------------------------------------------
+    # STL出力
+    # --------------------------------------------
+
+    o3d.io.write_triangle_mesh(
+        output_path,
+        merged
+    )
+
+    print(f"[EXPORT] {output_path}")
+
+# ============================================================
+# S key export
+# ============================================================
+
+def on_key_s(vis):
+    export_scene_as_stl(roots, "scene_export.stl")
+    return False
+
+# ============================================================
+# R key camera reset
+# ============================================================
+
+def on_key_r(vis):
+    ctr = vis.get_view_control()
+    ctr.convert_from_pinhole_camera_parameters(
+        initial_camera,
+        allow_arbitrary=True
+    )
+    return False
 
 # ============================================================
 # Main
@@ -791,8 +891,9 @@ if __name__ == "__main__":
     # visualizer
     # ============================================================
 
-    vis = o3d.visualization.Visualizer()
-
+    vis = o3d.visualization.VisualizerWithKeyCallback()
+    vis.register_key_callback(ord("S"), on_key_s)
+    vis.register_key_callback(ord("R"), on_key_r)
     vis.create_window()
     axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0)
     vis.add_geometry(axis)
@@ -804,6 +905,7 @@ if __name__ == "__main__":
     opt.background_color = np.array([0,0,0])
     ctr = vis.get_view_control()
     ctr.set_front([1, 1, 1])
+    initial_camera = ctr.convert_to_pinhole_camera_parameters()
 
     # ============================================================
     # animation loop

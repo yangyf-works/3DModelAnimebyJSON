@@ -187,6 +187,13 @@
       "children": [
         {
           "ref": "WPSarmsub"
+        },
+        {
+          "ref": "cube",
+          "transform": {
+            "scale": [1, 0.8, 0.8],
+            "position": [0, 5, 0]
+          }
         }
       ],
       "joint": {
