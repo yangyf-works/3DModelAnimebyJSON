@@ -3,6 +3,13 @@ import json
 import numpy as np
 import open3d as o3d
 import time
+import colorsys
+initial_camera = None
+HIDE_T = np.eye(4)
+HIDE_T[0, 0] = 0.00001
+HIDE_T[1, 1] = 0.00001
+HIDE_T[2, 2] = 0.00001
+HIDE_T[3, 3] = 1
 
 # ============================================================
 # Joint
@@ -12,23 +19,21 @@ class Joint:
     def __init__(
         self,
         joint_type,
-        axis,
+        axis=None,
         pivot=None,
         path=None,
-        axisno=None
+        axisno=None,
+        signal =""
     ):
 
         self.type = joint_type
 
-        self.axis = np.array(
-            axis,
-            dtype=float
-        )
-
-        n = np.linalg.norm(self.axis)
-
-        if n > 0:
-            self.axis /= n
+        self.axis = None
+        if axis is not None:
+            self.axis = np.array(axis, dtype=float)
+            n = np.linalg.norm(self.axis)
+            if n > 0:
+                self.axis /= n
 
         self.pivot = np.array(
             pivot if pivot is not None else [0, 0, 0],
@@ -37,7 +42,7 @@ class Joint:
 
         self.path = path
         self.axisno = axisno
-
+        self.signal = signal 
 
 # ============================================================
 # SceneNode
@@ -46,9 +51,7 @@ class Joint:
 class SceneNode:
     def __init__(self, name):
         self.name = name
-
         self.children = []
-
         self.meshes = []
 
         self.local_T = np.eye(4)
@@ -56,59 +59,50 @@ class SceneNode:
         self.def_T = np.eye(4)
 
         self.joint = None
-
         self.joint_value = 0.0
-
 
 # ============================================================
 # Motion
 # ============================================================
-
 class MotionClip:
-    def __init__(self, name, sequence):
+    def __init__(self, name, motion_def):
 
         self.name = name
-
-        self.sequence = sequence
+        self.type = motion_def.get("type", "motion")
+        self.sequence = motion_def["sequence"]
 
         self.total_duration = sum(
             s["duration"]
-            for s in sequence
+            for s in self.sequence
         )
-
-        # ----------------------------------------------------
-        # bake cumulative
-        # ----------------------------------------------------
 
         self.segments = []
 
         current_time = 0.0
         current_value = 0.0
 
-        for seg in sequence:
+        for seg in self.sequence:
 
             duration = seg["duration"]
 
-            speed = seg["speed"]
-
-            end_value = (
-                current_value
-                + speed * duration
-            )
+            if self.type == "signal":
+                end_value = seg["value"]
+                start_value = seg["value"]
+                speed = 0.0
+            else:
+                speed = seg["speed"]
+                start_value = current_value
+                end_value = current_value + speed * duration
 
             self.segments.append({
-
                 "start_time": current_time,
                 "end_time": current_time + duration,
-
-                "start_value": current_value,
+                "start_value": start_value,
                 "end_value": end_value,
-
                 "speed": speed
             })
 
             current_time += duration
-
             current_value = end_value
 
         self.total_value = current_value
@@ -212,13 +206,11 @@ def parse_joint(joint_def):
 
     return Joint(
         joint_type=joint_def["type"],
-        axis=joint_def["axis"],
-        pivot=joint_def.get(
-            "pivot",
-            [0, 0, 0]
-        ),
+        axis=joint_def.get("axis"),
+        pivot=joint_def.get("pivot",[0, 0, 0]),
         path=joint_def.get("path"),
-        axisno=joint_def.get("axisno")
+        axisno=joint_def.get("axisno"),
+        signal=joint_def.get("signal", "")
     )
 
 # ============================================================
@@ -231,6 +223,8 @@ def make_joint_transform(
 ):
 
     if joint is None:
+        return np.eye(4)
+    if joint.type == "signal":
         return np.eye(4)
 
     # ========================================================
@@ -520,6 +514,8 @@ def build_node(
         node.joint = parse_joint(
             defn.get("joint")
         )
+        if node.joint is not None and node.joint.type == "signal":
+            node.joint_value = 1
 
         for child_def in defn.get(
             "children",
@@ -593,7 +589,7 @@ def load_motion_file(path):
 
         clips[name] = MotionClip(
             name,
-            motion_def["sequence"]
+            motion_def
         )
 
     # --------------------------------------------------------
@@ -661,16 +657,15 @@ def evaluate_clip(
 
         if seg["start_time"] <= t < seg["end_time"]:
 
-            local_t = (
-                t - seg["start_time"]
-            )
+            if clip.type == "signal":
+                return seg["start_value"]
 
-            value = (
+            local_t = t - seg["start_time"]
+
+            return (
                 seg["start_value"]
                 + seg["speed"] * local_t
             )
-
-            return value
 
     return 0.0
 
@@ -694,7 +689,10 @@ def apply_motion_bindings(
             )
 
             if node is not None:
-                node.joint_value = NCaxisData[node.joint.path - 1][node.joint.axisno - 1]
+                if node.joint.type != "signal":
+                    node.joint_value = NCaxisData[node.joint.path - 1][node.joint.axisno - 1]
+                else:
+                    node.joint_value = NCsignalData[node.joint.signal]
                 break
 
 
@@ -702,23 +700,142 @@ def apply_motion_bindings(
 # collect meshes
 # ============================================================
 
-def collect_meshes(
+COLOR_LIST = [
+    [0.7, 0.7, 0.7],  # light gray
+              ]
+
+for i in range(10):
+
+    h = i / 10      # 色相
+    s = 0.4        # 彩度低め
+    v = 0.9        # 明るめ
+
+    rgb = colorsys.hsv_to_rgb(h, s, v)
+
+    COLOR_LIST.append(rgb)
+
+def paint_meshes(
     node,
-    out_list
-):
+    color_index=0
+):  
+    # --------------------------------------------------------
+    # JointがあるNodeを通過したら次の色へ
+    # --------------------------------------------------------
+
+    if node.joint is not None:
+        color_index += 1
+
+    color = COLOR_LIST[
+        color_index % len(COLOR_LIST)
+    ]
 
     for mesh in node.meshes:
-
-        out_list.append(
-            (mesh, node.world_T @ node.def_T)
-        )
+        mesh.paint_uniform_color(color)
 
     for child in node.children:
+        paint_meshes(
+            child,
+            color_index
+        )
 
+def collect_meshes(
+    node,
+    out_list,
+    hidden=False
+):
+    if (
+        node.joint is not None
+        and node.joint.type == "signal"
+        and node.joint_value == 0
+    ):
+        hidden = True
+
+    for mesh in node.meshes:
+        if hidden:
+            out_list.append(
+                (mesh, HIDE_T)
+            )
+        else:
+            out_list.append(
+                (mesh, node.world_T @ node.def_T)
+            )
+
+    for child in node.children:
         collect_meshes(
             child,
-            out_list
+            out_list,
+            hidden
         )
+
+# ============================================================
+# export merged STL
+# ============================================================
+
+def export_scene_as_stl(
+    roots,
+    output_path="export.stl"
+):
+
+    merged = o3d.geometry.TriangleMesh()
+
+    all_meshes = []
+
+    for root in roots:
+        collect_meshes(
+            root,
+            all_meshes
+        )
+
+    for mesh, world_T in all_meshes:
+
+        # ----------------------------------------
+        # 元メッシュを壊さないようコピー
+        # ----------------------------------------
+
+        m = o3d.geometry.TriangleMesh(mesh)
+
+        # ----------------------------------------
+        # merge
+        # ----------------------------------------
+
+        merged += m
+
+    # --------------------------------------------
+    # 法線再計算
+    # --------------------------------------------
+
+    merged.compute_vertex_normals()
+
+    # --------------------------------------------
+    # STL出力
+    # --------------------------------------------
+
+    o3d.io.write_triangle_mesh(
+        output_path,
+        merged
+    )
+
+    print(f"[EXPORT] {output_path}")
+
+# ============================================================
+# S key export
+# ============================================================
+
+def on_key_s(vis):
+    export_scene_as_stl(roots, "scene_export.stl")
+    return False
+
+# ============================================================
+# R key camera reset
+# ============================================================
+
+def on_key_r(vis):
+    ctr = vis.get_view_control()
+    ctr.convert_from_pinhole_camera_parameters(
+        initial_camera,
+        allow_arbitrary=True
+    )
+    return False
 
 # ============================================================
 # Main
@@ -766,6 +883,8 @@ if __name__ == "__main__":
         update_world_transform(root)
 
     all_meshes = []
+    for root in roots:
+        paint_meshes(root)
 
     for root in roots:
         collect_meshes(
@@ -784,8 +903,9 @@ if __name__ == "__main__":
     # visualizer
     # ============================================================
 
-    vis = o3d.visualization.Visualizer()
-
+    vis = o3d.visualization.VisualizerWithKeyCallback()
+    vis.register_key_callback(ord("S"), on_key_s)
+    vis.register_key_callback(ord("R"), on_key_r)
     vis.create_window()
     axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0)
     vis.add_geometry(axis)
@@ -797,6 +917,7 @@ if __name__ == "__main__":
     opt.background_color = np.array([0,0,0])
     ctr = vis.get_view_control()
     ctr.set_front([1, 1, 1])
+    initial_camera = ctr.convert_to_pinhole_camera_parameters()
 
     # ============================================================
     # animation loop

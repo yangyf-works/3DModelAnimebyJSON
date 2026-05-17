@@ -223,7 +223,6 @@ def make_joint_transform(
 
     if joint is None:
         return np.eye(4)
-    
     if joint.type == "signal":
         return np.eye(4)
 
