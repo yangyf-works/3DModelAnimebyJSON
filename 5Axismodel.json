@@ -19,7 +19,7 @@
           "ref": "cylinder",
           "transform": {
             "scale": [1.0, 1.5, 1],
-            "rotation": [90, 0, 0]
+            "rotation": [0, 0, 0]
           }
         }
       ]
@@ -103,6 +103,22 @@
       "children": [
         {
           "ref": "tableBC"
+        },
+        {
+          "ref": "cube",
+          "transform": {
+            "position": [0, -1.0, 2],
+            "scale": [3.0, 1, 1],
+            "rotation": [0, 0, 0]
+          }
+        },
+        {
+          "ref": "cube",
+          "transform": {
+            "position": [0, -1.0, -2],
+            "scale": [4.0, 1, 1],
+            "rotation": [0, 0, 0]
+          }
         }
       ],
       "joint": {

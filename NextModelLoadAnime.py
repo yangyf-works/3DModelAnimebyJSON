@@ -421,7 +421,8 @@ def expand_array(
     defn,
     defs,
     base_dir,
-    path
+    path,
+    flip_normal
 ):
     nodes = []
     count = defn["count"]
@@ -439,7 +440,8 @@ def expand_array(
             child_node,
             defs,
             base_dir,
-            f"{path}_arr{i}"
+            f"{path}_arr{i}",
+            flip_normal
         )
 
         # --------------------------------
@@ -472,9 +474,9 @@ def build_node(
     node_def,
     defs,
     base_dir,
-    path=""
+    path="",
+    flip_normal=False
 ):
-
     ref = node_def["ref"]
 
     defn = defs[ref]
@@ -487,6 +489,16 @@ def build_node(
 
     node = SceneNode(current_path)
     node.local_T = make_transform(node_def.get("transform"))
+    def_T = make_transform(defn.get("transform"))
+    det = np.linalg.det(
+        (node.local_T @ def_T)[:3,:3]
+    )
+
+    current_flip = (
+        flip_normal
+        if det > 0
+        else not flip_normal
+    )
 
     # ========================================================
     # mesh
@@ -500,10 +512,16 @@ def build_node(
         mesh = o3d.io.read_triangle_mesh(
             mesh_path
         )
+        if current_flip:
+            triangles = np.asarray(
+                mesh.triangles
+            )
+            triangles[:] = triangles[:, [0,2,1]]
+
         mesh.compute_vertex_normals()
         node.meshes.append(mesh)
         
-        node.def_T = make_transform(defn.get("transform"))
+        node.def_T = def_T
 
     # ========================================================
     # node
@@ -524,7 +542,8 @@ def build_node(
                 child_def,
                 defs,
                 base_dir,
-                current_path
+                current_path,
+                current_flip
             )
             node.children.append(child)
 
@@ -532,7 +551,7 @@ def build_node(
     # array
     # --------------------------------------------------------
     elif defn["type"] == "array":
-        children = expand_array(defn, defs, base_dir, current_path)
+        children = expand_array(defn, defs, base_dir, current_path, current_flip)
         node.children.extend(children)
 
     return node
@@ -617,23 +636,25 @@ def load_motion_file(path):
 # find node
 # ============================================================
 
-def find_node(node, path):
+def find_nodes(
+    node,
+    path,
+    results=None
+):
+    if results is None:
+        results = []
 
     if path in node.name:
-        return node
+        results.append(node)
 
     for child in node.children:
-
-        result = find_node(
+        find_nodes(
             child,
-            path
+            path,
+            results
         )
 
-        if result is not None:
-            return result
-
-    return None
-
+    return results
 
 # ============================================================
 # evaluate clip
@@ -667,7 +688,6 @@ def evaluate_clip(
 # ============================================================
 # apply motions
 # ============================================================
-
 def apply_motion_bindings(
     roots,
     bindings,
@@ -676,25 +696,32 @@ def apply_motion_bindings(
 
     for binding in bindings:
 
+        value = evaluate_clip(
+            binding.clip,
+            t + binding.time_offset
+        )
+
         for root in roots:
 
-            node = find_node(
+            nodes = find_nodes(
                 root,
                 binding.target
             )
 
-            if node is not None:
+            
+            for node in nodes:
 
-                value = evaluate_clip(
-                    binding.clip,
-                    t + binding.time_offset
-                )
+                if node.joint is None:
+                    continue
+
+                if binding.clip.type == "signal":
+                    if node.joint.type != "signal":
+                        continue
+                else:
+                    if node.joint.type == "signal":
+                        continue
 
                 node.joint_value = value
-
-                break
-
-
 # ============================================================
 # collect meshes
 # ============================================================
@@ -840,8 +867,8 @@ def on_key_r(vis):
 # Main
 # ============================================================
 if __name__ == "__main__":
-    MODEL_JSON = "WPSmodel.json"
-    MOTION_JSON = "WPSmotion.json"
+    MODEL_JSON = "DNAmodel.json"
+    MOTION_JSON = "DNAmotion.json"
 
     DT = 1 / 60
 

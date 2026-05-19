@@ -1,0 +1,58 @@
+{
+  "motions": {
+    "rotate_plus": {
+      "sequence": [
+        {
+          "duration": 2,
+          "speed": 15
+        }, 
+        {
+          "duration": 4.0,
+          "speed": -15
+        },
+        {
+          "duration": 2,
+          "speed": 15
+        }
+      ]
+    },
+
+    "rotate_minus": {
+      "sequence": [
+        {
+          "duration": 10.0,
+          "speed": -40
+        }
+      ]
+    },
+    "CubeBar": {
+      "type": "signal",
+      "sequence": [
+        { "duration": 2.0, "value": 1 },
+        { "duration": 2.0, "value": 0 }
+      ]
+    },
+    "CylinderBar": {
+      "type": "signal",
+      "sequence": [
+        { "duration": 2.0, "value": 0 },
+        { "duration": 2.0, "value": 1 }
+      ]
+    }
+  },
+
+  "bindings": [
+    {
+      "target": "Bar",
+      "motion": "rotate_plus"
+    },
+    {
+      "target":"cubesignal",
+      "motion":"CubeBar"
+    },
+    {
+      "target":"cylindersignal",
+      "motion":"CylinderBar"
+    }
+  ]
+}
