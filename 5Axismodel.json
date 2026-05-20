@@ -33,7 +33,7 @@
       ],
       "joint": {
         "type": "linear",
-        "axis": [1,0,0]
+        "axis": [0,1,0]
       }
     },
     
@@ -42,12 +42,34 @@
       "children": [
         {
           "ref": "SpindleY"
+        },
+        {
+          "ref": "cube",
+          "transform": {
+            "scale": [2,4, 1],
+            "position": [0, -1.5, -1]
+          }
         }
       ],
       "joint": {
         "type": "linear",
-        "axis": [0,1,0]
+        "axis": [1,0,0]
       }
+    },
+    "SpindleYZbed": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "SpindleYZ"
+        },
+        {
+          "ref": "cube",
+          "transform": {
+            "scale": [7,2, 2],
+            "position": [0, -4.0, -1]
+          }
+        }
+      ]
     },
 
     "tableB": {
@@ -107,16 +129,16 @@
         {
           "ref": "cube",
           "transform": {
-            "position": [0, -1.0, 2],
-            "scale": [3.0, 1, 1],
+            "position": [0, -1.5, 2],
+            "scale": [3.0, 2, 1],
             "rotation": [0, 0, 0]
           }
         },
         {
           "ref": "cube",
           "transform": {
-            "position": [0, -1.0, -2],
-            "scale": [4.0, 1, 1],
+            "position": [0, -1.5, -2],
+            "scale": [4.0, 2, 1],
             "rotation": [0, 0, 0]
           }
         }
@@ -125,18 +147,34 @@
         "type": "linear",
         "axis": [0,0,1]
       }
+    },
+    "tableBCXbed": {
+      "type": "node",
+      "children": [
+        {
+          "ref": "tableBCX"
+        },
+        {
+          "ref": "cube",
+          "transform": {
+            "position": [0, -2.5, 0.0],
+            "scale": [7.0, 1, 10],
+            "rotation": [0, 0, 0]
+          }
+        }
+      ]
     }
   },
 
   "scene": [
     {
-      "ref": "SpindleYZ",
+      "ref": "SpindleYZbed",
       "transform": {
         "position": [0, 3, -3]
       }
     },
     {
-      "ref": "tableBCX",
+      "ref": "tableBCXbed",
       "transform": {
         "position": [0, 0, 0],
         "rotation": [0, 0, 0]

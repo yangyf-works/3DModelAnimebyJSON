@@ -4,12 +4,16 @@
     "move_plus": {
       "sequence": [
         {
-          "duration": 3.0,
+          "duration": 1.5,
           "speed": 1
         },
         {
           "duration": 3.0,
           "speed": -1
+        },
+        {
+          "duration": 1.5,
+          "speed": 1
         }
       ]
     },
@@ -22,8 +26,12 @@
         },
         
         {
-          "duration": 2.0,
+          "duration": 4.0,
           "speed": 1
+        },
+        {
+          "duration": 2.0,
+          "speed": -1
         }
       ]
     },
@@ -35,8 +43,12 @@
           "speed": 30
         }, 
         {
-          "duration": 3.0,
+          "duration": 6.0,
           "speed": -30
+        }, 
+        {
+          "duration": 3.0,
+          "speed": 30
         }
       ]
     },
@@ -44,11 +56,11 @@
     "rotate_minus": {
       "sequence": [
         {
-          "duration": 3.0,
+          "duration": 10.0,
           "speed": -30
         },
         {
-          "duration": 3.0,
+          "duration": 10.0,
           "speed": 30
         }
       ]

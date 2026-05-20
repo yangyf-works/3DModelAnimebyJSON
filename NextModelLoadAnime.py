@@ -867,8 +867,8 @@ def on_key_r(vis):
 # Main
 # ============================================================
 if __name__ == "__main__":
-    MODEL_JSON = "DNAmodel.json"
-    MOTION_JSON = "DNAmotion.json"
+    MODEL_JSON = "5Axismodel.json"
+    MOTION_JSON = "5Axismotion.json"
 
     DT = 1 / 60
 
